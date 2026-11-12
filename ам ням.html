@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AM NYAM CLICKER</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#03130b;color:white;font-family:Arial,sans-serif;min-height:100vh;overflow-x:hidden}
+#matrix{position:fixed;inset:0;width:100%;height:100%;z-index:-1;opacity:.3}
+header{text-align:center;padding:22px 10px;color:#69ff8a;text-shadow:0 0 15px #00ff55}
+header h1{font-size:30px}header p{color:#a1ffb5;margin-top:7px}
+.container{width:92%;max-width:450px;margin:auto;text-align:center}
+.balance{background:#092817;border:1px solid #36ff70;border-radius:18px;padding:17px;margin:12px 0;box-shadow:0 0 18px #00ff5533}
+.balance h2{color:#6aff91;font-size:30px;margin:8px}
+.stats{display:flex;gap:10px;margin:15px 0}
+.stat{flex:1;background:#0b2918;border:1px solid #176e38;border-radius:12px;padding:13px 5px}
+.stat strong{display:block;color:#6cff91;margin-top:7px}
+.monster{margin:20px auto;width:220px;height:220px;background:radial-gradient(circle,#8aff9f,#20b94e 65%,#08752b);border:5px solid #a2ffb1;border-radius:45% 45% 42% 42%;display:flex;justify-content:center;align-items:center;font-size:125px;cursor:pointer;box-shadow:0 0 35px #00ff65;transition:transform .12s;user-select:none;position:relative}
+.monster:active{transform:scale(.91)}
+.hint{color:#aaffb8;margin-bottom:18px}
+.section{background:#082518ee;border:1px solid #207c3d;border-radius:17px;padding:16px;margin:18px 0}
+.section h3{color:#72ff91;margin-bottom:13px}
+.upgrade{background:#104026;border:1px solid #36a85c;border-radius:12px;padding:13px;margin:10px 0;text-align:left}
+.upgrade button{width:100%;margin-top:10px}
+button{background:linear-gradient(135deg,#35ed70,#079b40);color:#00240d;border:none;padding:12px;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;transition:.2s}
+button:active{transform:scale(.96)}button:disabled{background:#53645a;color:#bbb;cursor:not-allowed}
+.upgrade p{color:#b8ffc8;font-size:13px;margin-top:5px}
+.float{position:fixed;color:#76ff91;font-weight:bold;font-size:22px;pointer-events:none;animation:rise .8s forwards;z-index:10}
+@keyframes rise{to{transform:translateY(-90px);opacity:0}}
+footer{color:#77b98b;padding:25px;text-align:center;font-size:12px}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<header><h1>💚 AM NYAM CLICKER</h1><p>Добро пожаловать в мир Ам Няма!</p></header>
+<div class="container">
+  <div class="balance"><p>💎 AM NYAM TOKENS</p><h2 id="coins">0</h2><p>Твоя игровая валюта</p></div>
+  <div class="stats">
+    <div class="stat">👆 За клик<strong id="power">1</strong></div>
+    <div class="stat">⚡ В секунду<strong id="persec">0</strong></div>
+  </div>
+  <div class="monster" id="monster" onclick="clickMonster(event)">👾</div>
+  <p class="hint">Нажимай на Ам Няма и собирай токены!</p>
+  <div class="section">
+    <h3>🛒 МАГАЗИН УЛУЧШЕНИЙ</h3>
+    <div class="upgrade"><b>👆 Сильный клик</b><p>Увеличивает доход каждого клика на +1</p><p>Уровень: <span id="clickLevel">0</span></p><button onclick="buyClick()">Купить за <span id="clickCost">20</span> 💎</button></div>
+    <div class="upgrade"><b>⚡ Автокликер</b><p>Добавляет +1 токен каждую секунду</p><p>Уровень: <span id="autoLevel">0</span></p><button onclick="buyAuto()">Купить за <span id="autoCost">50</span> 💎</button></div>
+    <div class="upgrade"><b>🚀 Супер клик</b><p>Увеличивает силу клика на +5</p><p>Уровень: <span id="superLevel">0</span></p><button onclick="buySuper()">Купить за <span id="superCost">150</span> 💎</button></div>
+  </div>
+  <div class="section"><h3>🏆 ТВОЙ ПРОГРЕСС</h3><p>Всего заработано: <b id="earned">0</b> 💎</p><p style="margin-top:10px">Всего кликов: <b id="totalClicks">0</b></p></div>
+  <div class="section"><h3>⚙️ НАСТРОЙКИ</h3><button onclick="saveGame()">💾 Сохранить игру</button><button onclick="resetGame()" style="margin-top:10px">🔄 Начать заново</button></div>
+</div>
+<footer>AM NYAM CLICKER 💚<br>Сделано с любовью к играм</footer>
+<script>
+let coins=0,earned=0,power=1,auto=0,clickLevel=0,autoLevel=0,superLevel=0,totalClicks=0;
+let clickCost=20,autoCost=50,superCost=150;
+function update(){
+ document.getElementById("coins").textContent=Math.floor(coins).toLocaleString();
+ document.getElementById("power").textContent=power;
+ document.getElementById("persec").textContent=auto;
+ document.getElementById("clickLevel").textContent=clickLevel;
+ document.getElementById("autoLevel").textContent=autoLevel;
+ document.getElementById("superLevel").textContent=superLevel;
+ document.getElementById("clickCost").textContent=clickCost;
+ document.getElementById("autoCost").textContent=autoCost;
+ document.getElementById("superCost").textContent=superCost;
+ document.getElementById("earned").textContent=Math.floor(earned).toLocaleString();
+ document.getElementById("totalClicks").textContent=totalClicks;
+ document.querySelectorAll(".upgrade button").forEach(btn=>{
+   const cost=Number(btn.textContent.match(/\d+/)?.[0]||0);
+   btn.disabled=coins<cost;
+ });
+}
+function addCoins(amount){coins+=amount;earned+=amount;update()}
+function clickMonster(event){
+ addCoins(power);totalClicks++;
+ const el=document.createElement("div");el.className="float";el.textContent="+"+power+" 💎";
+ el.style.left=event.clientX+"px";el.style.top=event.clientY+"px";
+ document.body.appendChild(el);setTimeout(()=>el.remove(),800);update();
+}
+function buyClick(){if(coins<clickCost)return;coins-=clickCost;power+=1;clickLevel++;clickCost=Math.floor(clickCost*1.6);update()}
+function buyAuto(){if(coins<autoCost)return;coins-=autoCost;auto+=1;autoLevel++;autoCost=Math.floor(autoCost*1.7);update()}
+function buySuper(){if(coins<superCost)return;coins-=superCost;power+=5;superLevel++;superCost=Math.floor(superCost*1.9);update()}
+setInterval(()=>{if(auto>0)addCoins(auto)},1000);
+function saveGame(){
+ const data={coins,earned,power,auto,clickLevel,autoLevel,superLevel,totalClicks,clickCost,autoCost,superCost};
+ localStorage.setItem("amNyamSave",JSON.stringify(data));alert("💚 Игра успешно сохранена!");
+}
+function loadGame(){
+ const data=localStorage.getItem("amNyamSave");if(!data)return;
+ try{const s=JSON.parse(data);
+ coins=Math.max(0,Number(s.coins)||0);earned=Math.max(0,Number(s.earned)||0);
+ power=Math.max(1,Number(s.power)||1);auto=Math.max(0,Number(s.auto)||0);
+ clickLevel=Math.max(0,Number(s.clickLevel)||0);autoLevel=Math.max(0,Number(s.autoLevel)||0);
+ superLevel=Math.max(0,Number(s.superLevel)||0);totalClicks=Math.max(0,Number(s.totalClicks)||0);
+ clickCost=Math.max(20,Number(s.clickCost)||20);autoCost=Math.max(50,Number(s.autoCost)||50);
+ superCost=Math.max(150,Number(s.superCost)||150);
+ }catch(error){console.log("Ошибка загрузки сохранения")}
+}
+function resetGame(){
+ if(!confirm("Ты действительно хочешь начать игру заново?"))return;
+ localStorage.removeItem("amNyamSave");
+ coins=0;earned=0;power=1;auto=0;clickLevel=0;autoLevel=0;superLevel=0;totalClicks=0;
+ clickCost=20;autoCost=50;superCost=150;update();
+}
+setInterval(()=>{localStorage.setItem("amNyamSave",JSON.stringify({coins,earned,power,auto,clickLevel,autoLevel,superLevel,totalClicks,clickCost,autoCost,superCost}))},5000);
+const canvas=document.getElementById("matrix"),ctx=canvas.getContext("2d");
+function resizeMatrix(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+resizeMatrix();window.addEventListener("resize",resizeMatrix);
+const letters="01アカサタナハマヤラワ0123456789",fontSize=16;let drops=[];
+function initDrops(){drops=Array(Math.ceil(canvas.width/fontSize)).fill(1)}
+initDrops();window.addEventListener("resize",initDrops);
+function drawMatrix(){
+ ctx.fillStyle="rgba(3,19,11,0.12)";ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="#28ff65";ctx.font=fontSize+"px monospace";
+ for(let i=0;i<drops.length;i++){
+  const char=letters[Math.floor(Math.random()*letters.length)];
+  ctx.fillText(char,i*fontSize,drops[i]*fontSize);
+  if(drops[i]*fontSize>canvas.height&&Math.random()>.975)drops[i]=0;
+  drops[i]++;
+ }
+}
+setInterval(drawMatrix,40);
+loadGame();update();
+</script>
+</body>
+</html>
